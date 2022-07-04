@@ -388,88 +388,100 @@ contract ERC20 is IERC20 {
 }
 
 /**
- * @title StakeToken
+ * @title DiaboloStaking
  * @dev Standard ERC20 token with burning and optional functions implemented.
  * For full specification of ERC-20 standard see:
  * https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
  */
-contract StakeToken is ERC20 {
+contract DiaboloStaking is ERC20 {
 
     string private _name;
     string private _symbol;
     uint8 private _decimals;
     
-    IERC20 public _token;
+    IERC20 public token;
 
     using SafeMath for uint256;
 
     /**
-     * @dev Constructor.
-     * @param token address of main token
+     * @dev Constructor
+     * @param tokenAddress address of main token
      * @param tokenName name of the token
      * @param tokenSymbol symbol of the token, 3-4 chars is recommended
      * @param tokenDecimals number of decimal places of one token unit, 18 is widely used
      */
-    constructor(IERC20 token, string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) {
-      _token = token;
+    constructor(IERC20 tokenAddress, string memory tokenName, string memory tokenSymbol, uint8 tokenDecimals) {
+      token = tokenAddress;
       _name = tokenName;
       _symbol = tokenSymbol;
       _decimals = tokenDecimals;
     }
 
     /**
-     * @dev Burns a specific amount of tokens.
-     * @param value The amount of lowest token units to be burned.
+     * @dev Burns a specific amount of tokens
+     * @param value The amount of lowest token units to be burned
      */
     function burn(uint256 value) public {
       _burn(msg.sender, value);
     }
 
     /**
-     * @dev Stake _token to earn.
-     * @param _amount The amount tokens to stake.
+     * @dev Stake _token to earn
+     * @param _amount the amount tokens to stake
      */
     function stake(uint256 _amount) public {
-        uint256 totalStaked = _token.balanceOf(address(this));
-        uint256 totalShares = totalSupply();
-        if (totalShares == 0 || totalStaked == 0) {
+        uint256 _totalStaked = token.balanceOf(address(this));
+        uint256 _totalShares = totalSupply();
+        if (_totalShares == 0 || _totalStaked == 0) {
             _mint(msg.sender, _amount);
         } else {
-            uint256 what = _amount.mul(totalShares).div(totalStaked);
+            uint256 what = _amount.mul(_totalShares).div(_totalStaked);
             _mint(msg.sender, what);
         }
-        _token.transferFrom(msg.sender, address(this), _amount);
+        token.transferFrom(msg.sender, address(this), _amount);
     }
 
     /**
-     * @dev unStake _token with share.
-     * @param _share The amount share.
+     * @dev unStake _token with share
+     * @param _share the amount share
      */
     function unStake(uint256 _share) public {
         uint256 totalShares = totalSupply();
-        uint256 what = _share.mul(_token.balanceOf(address(this))).div(totalShares);
+        uint256 what = _share.mul(token.balanceOf(address(this))).div(totalShares);
         _burn(msg.sender, _share);
-        _token.transfer(msg.sender, what);
+        token.transfer(msg.sender, what);
     }
 
-    // optional functions from ERC20 stardard
+    /**
+     * @return the token amount for share
+     */
+    function tokenAmount(uint256 _share) public view returns (uint256) {
+      return _share.mul(token.balanceOf(address(this))).div(totalSupply());
+    }
 
     /**
-     * @return the name of the token.
+     * @return the total token amount staked
+     */
+    function totalStaked() public view returns (uint256) {
+      return token.balanceOf(address(this));
+    }
+
+    /**
+     * @return the name of the token
      */
     function name() public view returns (string memory) {
       return _name;
     }
 
     /**
-     * @return the symbol of the token.
+     * @return the symbol of the token
      */
     function symbol() public view returns (string memory) {
       return _symbol;
     }
 
     /**
-     * @return the number of decimals of the token.
+     * @return the number of decimals of the token
      */
     function decimals() public view returns (uint8) {
       return _decimals;
